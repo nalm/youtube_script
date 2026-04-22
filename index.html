@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>유튜브 영상 AI 요약기</title>
+    <style>
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        h1 { text-align: center; color: #2c3e50; }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        .input-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: bold; font-size: 14px;}
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 15px;
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            background-color: #0066cc;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        button:hover { background-color: #0052a3; }
+        button:disabled { background-color: #cccccc; cursor: not-allowed; }
+        
+        #result-area {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-left: 4px solid #0066cc;
+            border-radius: 4px;
+            display: none;
+            line-height: 1.6;
+        }
+        .loading { text-align: center; margin-top: 20px; display: none; color: #666; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h1>유튜브 영상 AI 요약기</h1>
+    
+    <div class="container">
+        <div class="input-group">
+            <label for="apiKey">Gemini API Key (무료 발급 가능)</label>
+            <input type="password" id="apiKey" placeholder="AI 요약을 위한 API 키를 입력하세요">
+        </div>
+
+        <div class="input-group">
+            <label for="youtubeUrl">유튜브 동영상 링크</label>
+            <input type="text" id="youtubeUrl" placeholder="https://www.youtube.com/watch?v=...">
+        </div>
+
+        <button id="submitBtn" onclick="processVideo()">스크립트 추출 및 보고서 작성</button>
+        
+        <div id="loading" class="loading">
+            데이터를 처리하고 AI가 보고서를 작성 중입니다. 잠시만 기다려주세요...
+        </div>
+
+        <div id="result-area">
+            <h3>요약 보고서</h3>
+            <div id="summary-content"></div>
+        </div>
+    </div>
+
+    <script>
+        async function processVideo() {
+            const apiKey = document.getElementById('apiKey').value.trim();
+            const url = document.getElementById('youtubeUrl').value.trim();
+            const btn = document.getElementById('submitBtn');
+            const loading = document.getElementById('loading');
+            const resultArea = document.getElementById('result-area');
+            const summaryContent = document.getElementById('summary-content');
+
+            if (!apiKey || !url) {
+                alert("API 키와 유튜브 링크를 모두 입력해주세요.");
+                return;
+            }
+
+            // UI 상태 변경 (로딩 중)
+            btn.disabled = true;
+            loading.style.display = 'block';
+            resultArea.style.display = 'none';
+
+            try {
+                // 1. 유튜브 스크립트 추출 (Mock Data)
+                // 실제 구현 시 백엔드 API 엔드포인트로 대체해야 합니다.
+                const transcript = await extractTranscriptMock(url);
+
+                // 2. 추출된 스크립트를 바탕으로 AI 요약 요청
+                const report = await generateSummary(apiKey, transcript);
+
+                // 3. 결과 출력
+                summaryContent.innerHTML = formatReportText(report);
+                resultArea.style.display = 'block';
+
+            } catch (error) {
+                alert("오류가 발생했습니다: " + error.message);
+            } finally {
+                // UI 상태 복구
+                btn.disabled = false;
+                loading.style.display = 'none';
+            }
+        }
+
+        // [핵심 1] 자막 추출 함수 (브라우저 제약으로 임시 텍스트 반환)
+        async function extractTranscriptMock(url) {
+            // 브라우저 프론트엔드에서는 유튜브 자막 서버에 직접 접근할 수 없습니다 (CORS 문제).
+            // 차후 파이썬이나 Node.js로 만든 간단한 백엔드 API 주소로 변경하시면 됩니다.
+            // 예시: return await fetch(`https://내-서버.com/api/transcript?url=${url}`).then(res => res.text());
+            
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    resolve("이 영상은 인공지능의 발전과 미래 사회에 미치는 영향에 대해 다루고 있습니다. AI 기술은 의료, 교육, 산업 등 다양한 분야에서 혁신을 일으키고 있으며, 동시에 윤리적 문제와 일자리 변화에 대한 대비가 필요하다는 점을 강조하고 있습니다. 지속적인 연구와 사회적 합의가 중요합니다.");
+                }, 1000); // 1초 지연으로 추출 과정 시뮬레이션
+            });
+        }
+
+        // [핵심 2] Gemini API를 활용한 요약 보고서 생성
+        async function generateSummary(apiKey, text) {
+            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+            
+            const prompt = `
+            다음은 유튜브 영상의 스크립트입니다. 이 내용을 바탕으로 논리적이고 깔끔한 요약 보고서를 작성해 주세요.
+            [요구사항]
+            1. 핵심 주제 요약 (1~2줄)
+            2. 주요 내용 (글머리 기호 사용)
+            3. 결론 및 인사이트
+            
+            [스크립트 내용]
+            ${text}
+            `;
+
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }]
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error("AI API 호출에 실패했습니다. API 키를 확인해주세요.");
+            }
+
+            const data = await response.json();
+            return data.candidates[0].content.parts[0].text;
+        }
+
+        // 마크다운 형태의 결과를 HTML로 간단히 변환해주는 유틸리티 함수
+        function formatReportText(text) {
+            return text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // 굵은 글씨
+                .replace(/\*(.*?)/g, '<br>• $1')                  // 글머리 기호
+                .replace(/\n/g, '<br>');                          // 줄바꿈
+        }
+    </script>
+</body>
+</html>
